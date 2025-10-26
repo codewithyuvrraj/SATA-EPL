@@ -13,14 +13,20 @@ class KhataBookManager {
       let users = [];
       
       if (panel === 'superMaster') {
-        users = await DatabaseManager.getAllSupermasters();
+        const { data, error } = await supabase.from('supermasters').select('*').eq('blocked', false);
+        if (error) throw error;
+        users = data || [];
       } else if (panel === 'master') {
-        const { data } = await supabase.from('masters').select('*').eq('blocked', false);
+        const { data, error } = await supabase.from('masters').select('*').eq('blocked', false);
+        if (error) throw error;
         users = data || [];
       } else if (panel === 'agent') {
-        const { data } = await supabase.from('agents').select('*').eq('blocked', false);
+        const { data, error } = await supabase.from('agents').select('*').eq('blocked', false);
+        if (error) throw error;
         users = data || [];
       }
+      
+      console.log('Loaded khata users:', users);
       
       users.forEach(user => {
         const option = document.createElement('option');
