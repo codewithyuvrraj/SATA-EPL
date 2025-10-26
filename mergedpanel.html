@@ -2317,55 +2317,72 @@
       }
     }
 
-    function showUserList(userType) {
+    async function showUserList(userType) {
       const modalTitle = document.getElementById('userListModalTitle');
       const modalContent = document.getElementById('userListModalContent');
       
       let users = [];
       let title = '';
+      let tableName = '';
       
-      switch(userType) {
-        case 'superMasters':
-          users = getStore("superMasters", []).filter(u => !u.blocked);
-          title = 'Super Masters';
-          break;
-        case 'masters':
-          users = getStore("masters", []).filter(u => !u.blocked);
-          title = 'Masters';
-          break;
-        case 'agents':
-          users = getStore("agents", []).filter(u => !u.blocked);
-          title = 'Agents';
-          break;
-        case 'clients':
-          users = getStore("clients", []).filter(u => !u.blocked);
-          title = 'Clients';
-          break;
-      }
-      
-      modalTitle.textContent = `${title} List (${users.length})`;
-      
-      let userListHTML = '';
-      users.forEach(user => {
-        userListHTML += `
-          <div class="list-item">
-            <div class="list-item-header">
-              <div class="list-item-title">
-                <span class="user-type-indicator ${getUserTypeIndicator(userType)}">${getUserTypeAbbr(userType)}</span>
-                ${user.user}
+      try {
+        switch(userType) {
+          case 'superMasters':
+            tableName = 'supermasters';
+            title = 'Super Masters';
+            break;
+          case 'masters':
+            tableName = 'masters';
+            title = 'Masters';
+            break;
+          case 'agents':
+            tableName = 'agents';
+            title = 'Agents';
+            break;
+          case 'clients':
+            tableName = 'clients';
+            title = 'Clients';
+            break;
+        }
+        
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .eq('blocked', false)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        users = data || [];
+        
+        modalTitle.textContent = `${title} List (${users.length})`;
+        
+        let userListHTML = '';
+        users.forEach(user => {
+          userListHTML += `
+            <div class="list-item">
+              <div class="list-item-header">
+                <div class="list-item-title">
+                  <span class="user-type-indicator ${getUserTypeIndicator(userType)}">${getUserTypeAbbr(userType)}</span>
+                  ${user.username}
+                </div>
+              </div>
+              <div class="list-item-details">
+                <div class="list-item-detail"><i class="fas fa-key"></i> Login: ${user.login_name}</div>
+                ${user.win_commission ? `<div class="list-item-detail"><i class="fas fa-percentage"></i> Win: ${user.win_commission}% | Loss: ${user.loss_commission}%</div>` : ''}
+                <div class="list-item-detail"><i class="fas fa-lock"></i> Password: ${user.password}</div>
+                <div class="list-item-detail"><i class="fas fa-money-bill-wave"></i> Balance: ₹${user.balance || 0}</div>
               </div>
             </div>
-            <div class="list-item-details">
-              <div class="list-item-detail"><i class="fas fa-key"></i> Login: ${user.loginName || user.user}</div>
-              ${user.winCommission ? `<div class="list-item-detail"><i class="fas fa-percentage"></i> Win: ${user.winCommission}% | Loss: ${user.lossCommission}%</div>` : ''}
-              ${currentUserType === 'admin' ? `<div class="list-item-detail"><i class="fas fa-lock"></i> Password: ${user.pass}</div>` : ''}
-            </div>
-          </div>
-        `;
-      });
-      
-      modalContent.innerHTML = userListHTML || '<div class="list-item">No users found</div>';
-      document.getElementById('userListModal').style.display = 'flex';
+          `;
+        });
+        
+        modalContent.innerHTML = userListHTML || '<div class="list-item">No users found</div>';
+        document.getElementById('userListModal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error loading users:', error);
+        modalContent.innerHTML = '<div class="list-item">Error loading users</div>';
+        document.getElementById('userListModal').style.display = 'flex';
+      }
     }
 
     function closeUserListModal() {
