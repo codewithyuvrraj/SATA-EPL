@@ -6,6 +6,8 @@
   <title>Advanced Admin & Agent Panel</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="professional-ui.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="database.js"></script>
   <script src="khata-book.js"></script>
@@ -16,6 +18,7 @@
   <script src="balance-khata-manager.js"></script>
   <script src="panel-balance-fix.js"></script>
   <script src="complete-system-manager.js"></script>
+  <script src="ui-enhancements.js"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -1364,11 +1367,11 @@
   <div id="toast" class="toast"></div>
 
   <div class="header">
-    <div class="menu-icon" id="adminMenuIcon" onclick="toggleMenu()">
-      <i class="fas fa-ellipsis-v"></i>
-    </div>
-    <h1 class="animate__animated animate__fadeInDown">Advanced Admin & Agent Panel</h1>
-    <div></div> <!-- Empty div for flex alignment -->
+    <h1 class="animate__animated animate__fadeInDown">🎯 SATA Gaming Platform</h1>
+  </div>
+  
+  <div class="menu-icon" id="adminMenuIcon" onclick="toggleMenu()">
+    <i class="fas fa-bars"></i>
   </div>
   
   <div class="dropdown-menu" id="adminMenu">
@@ -1415,8 +1418,9 @@
   
   <!-- Single Login Panel -->
   <div id="login" class="panel active">
-    <div class="section animate__animated animate__fadeIn">
-      <h3><i class="fas fa-sign-in-alt"></i> Login</h3>
+    <div class="section animate__animated animate__fadeIn" style="max-width: 400px; margin: 2rem auto;">
+      <h3><i class="fas fa-sign-in-alt"></i> Welcome Back</h3>
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Sign in to access your gaming dashboard</p>
       <div class="panel-selector">
         <select class="panel-dropdown" id="loginPanel">
           <option value="">Select Panel</option>
