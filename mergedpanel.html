@@ -12,6 +12,7 @@
   <script src="deposit-withdraw.js"></script>
   <script src="submit-data.js"></script>
   <script src="user-management.js"></script>
+  <script src="number-system.js"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -1312,6 +1313,48 @@
       90% { opacity: 1; }
       100% { transform: translateY(-100px); opacity: 0; }
     }
+    
+    /* Number System Styles */
+    .number-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .number-box {
+      width: calc(25% - 10px);
+      min-width: 80px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .number-box:hover {
+      background: rgba(52,152,219,0.3);
+      transform: scale(1.05);
+    }
+    
+    .number-box.has-bet {
+      background: rgba(46,204,113,0.3);
+      border-color: var(--success);
+    }
+    
+    .number-box .number {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--light);
+    }
+    
+    .number-box .bet-info {
+      font-size: 0.8rem;
+      color: var(--warning);
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -1361,6 +1404,9 @@
     </div>
     <div class="dropdown-item" onclick="showSection('heading')">
       <i class="fas fa-heading"></i> Heading
+    </div>
+    <div class="dropdown-item" onclick="showSection('numberSystem')">
+      <i class="fas fa-dice"></i> Number System
     </div>
   </div>
   
@@ -1592,6 +1638,21 @@
         <textarea id="announcementText" placeholder="Type your announcement here..." rows="4"></textarea>
         <button class="btn btn-primary btn-block" onclick="updateAnnouncement()">Update Announcement</button>
         <div id="headingMsg" class="message" style="display: none;"></div>
+      </div>
+      
+      <!-- Number System Section -->
+      <div class="section animate__animated animate__fadeIn" id="numberSystemSection" style="display: none;">
+        <h3><i class="fas fa-dice"></i> Number System</h3>
+        
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('ghaziabad')">Ghaziabad</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('faridabad')">Faridabad</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('gali')">Gali</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('disawar')">Disawar</button>
+          <button class="btn btn-warning" onclick="NumberSystem.loadBets('harup')">Harup</button>
+        </div>
+        
+        <div id="numberGridContainer" style="margin-top: 20px;"></div>
       </div>
       
       <button class="btn btn-danger btn-block" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -1940,6 +2001,28 @@
     </div>
   </div>
 
+  <!-- Bet Modal -->
+  <div id="betModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Place Bet</h3>
+        <button class="modal-close" onclick="NumberSystem.closeBetModal()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <p>Game: <strong id="betModalGameType"></strong></p>
+        <p>Number: <strong id="betModalNumber"></strong></p>
+        <input type="hidden" id="betModalGameTypeHidden">
+        <input type="hidden" id="betModalNumberHidden">
+        <input type="number" id="betAmount" placeholder="Enter bet amount" min="1" style="margin-top: 15px;">
+        <p style="margin-top: 10px; color: var(--warning);">Potential Win: 80X</p>
+        <div class="btn-group" style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="NumberSystem.placeBet()">Place Bet</button>
+          <button class="btn btn-secondary" onclick="NumberSystem.closeBetModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Game list from the provided file (Lucky Spin removed)
     const gamesList = ["Mines", "Aviator", "Dragon Tiger", "Lucky 7"];
@@ -2046,6 +2129,7 @@
       document.getElementById('depositWithdrawSection').style.display = 'none';
       document.getElementById('khataBookSection').style.display = 'none';
       document.getElementById('headingSection').style.display = 'none';
+      document.getElementById('numberSystemSection').style.display = 'none';
       
       // Show selected section
       document.getElementById(sectionName + 'Section').style.display = 'block';
@@ -2069,6 +2153,8 @@
         KhataBookManager.renderKhataBook();
       } else if (sectionName === 'heading') {
         document.getElementById('announcementText').value = getStore('announcement', '');
+      } else if (sectionName === 'numberSystem') {
+        // Number system section loaded
       }
     }
 
