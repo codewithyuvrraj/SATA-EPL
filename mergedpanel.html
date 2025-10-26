@@ -8,6 +8,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="database.js"></script>
+  <script src="khata-book.js"></script>
+  <script src="deposit-withdraw.js"></script>
+  <script src="submit-data.js"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -1475,7 +1478,7 @@
             <option value="withdraw">Dena</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-block" onclick="submitTransaction()">Save</button>
+        <button class="btn btn-primary btn-block" onclick="SubmitDataManager.submitTransaction()">Save</button>
         <div id="submitMsg" class="message" style="display: none;"></div>
       </div>
       
@@ -1557,8 +1560,8 @@
         <input type="text" id="transUser" placeholder="Username">
         <input type="number" id="transAmt" placeholder="Amount">
         <div class="btn-group">
-          <button class="btn btn-primary" onclick="transact('deposit')">Deposit</button>
-          <button class="btn btn-danger" onclick="transact('withdraw')">Withdraw</button>
+          <button class="btn btn-primary" onclick="TransactionManager.deposit()">Deposit</button>
+          <button class="btn btn-danger" onclick="TransactionManager.withdraw()">Withdraw</button>
         </div>
         <div id="transMsg" class="message" style="display: none;"></div>
       </div>
@@ -1576,7 +1579,7 @@
           <option value="">Select User</option>
         </select>
         <textarea id="khataNote" placeholder="Type your note here..." rows="4"></textarea>
-        <button class="btn btn-primary btn-block" onclick="addKhataNote()">Add Note</button>
+        <button class="btn btn-primary btn-block" onclick="KhataBookManager.addKhataNote()">Add Note</button>
         <div id="khataMsg" class="message" style="display: none;"></div>
         
         <div class="list-container" id="khataList"></div>
@@ -2051,18 +2054,18 @@
         document.getElementById('ledgerDate').valueAsDate = new Date();
         renderLedger();
       } else if (sectionName === 'submit') {
-        populateSubmitUsers();
+        SubmitDataManager.populateSubmitUsers();
         document.getElementById('submitDate').valueAsDate = new Date();
       } else if (sectionName === 'commission') {
         populateCommissionUsers();
       } else if (sectionName === 'data') {
         document.getElementById('dataDate').valueAsDate = new Date();
-        renderSubmittedData();
+        SubmitDataManager.renderSubmittedData();
       } else if (sectionName === 'users') {
         renderAllUsers();
       } else if (sectionName === 'khataBook') {
-        populateKhataUsers();
-        renderKhataBook();
+        KhataBookManager.populateKhataUsers();
+        KhataBookManager.renderKhataBook();
       } else if (sectionName === 'heading') {
         document.getElementById('announcementText').value = getStore('announcement', '');
       }
@@ -4127,9 +4130,10 @@
       document.getElementById('dataDate').valueAsDate = new Date();
       
       // Add event listeners
-      document.getElementById('submitPanel').addEventListener('change', populateSubmitUsers);
+      document.getElementById('submitPanel').addEventListener('change', () => SubmitDataManager.populateSubmitUsers());
       document.getElementById('commissionPanel').addEventListener('change', populateCommissionUsers);
-      document.getElementById('khataPanel').addEventListener('change', populateKhataUsers);
+      document.getElementById('khataPanel').addEventListener('change', () => KhataBookManager.populateKhataUsers());
+      document.getElementById('khataUser').addEventListener('change', () => KhataBookManager.renderKhataBook());
       
       // Hide admin menu icon initially
       document.getElementById('adminMenuIcon').style.display = 'none';
