@@ -19,6 +19,8 @@
   <script src="panel-balance-fix.js"></script>
   <script src="complete-system-manager.js"></script>
   <script src="user-creation-manager.js"></script>
+  <script src="restricted-hierarchy-manager.js"></script>
+  <script src="balance-transaction-manager.js"></script>
   <script src="ui-enhancements.js"></script>
   <style>
     :root {
@@ -1368,7 +1370,10 @@
   <div id="toast" class="toast"></div>
 
   <div class="header">
-    <h1 class="animate__animated animate__fadeInDown">🎯 SATA Gaming Platform</h1>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+      <img src="sata-gaming-logo.png" alt="SATA Gaming" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; box-shadow: 0 4px 8px rgba(0,0,0,0.3);" onerror="this.style.display='none'">
+      <h1 class="animate__animated animate__fadeInDown">🎯 SATA Gaming Platform</h1>
+    </div>
   </div>
   
   <div class="menu-icon" id="adminMenuIcon" onclick="toggleMenu()">
@@ -1614,9 +1619,12 @@
           <option value="superMaster">Super Master</option>
           <option value="master">Master</option>
           <option value="agent">Agent</option>
+          <option value="client">Client</option>
         </select>
-        <input type="text" id="transUser" placeholder="Username">
-        <input type="number" id="transAmt" placeholder="Amount">
+        <select id="transUser">
+          <option value="">Select User</option>
+        </select>
+        <input type="number" id="transAmt" placeholder="Amount" min="1">
         <div class="btn-group">
           <button class="btn btn-primary" onclick="TransactionManager.deposit()">Deposit</button>
           <button class="btn btn-danger" onclick="TransactionManager.withdraw()">Withdraw</button>
@@ -1640,6 +1648,9 @@
         <button class="btn btn-primary btn-block" onclick="KhataBookManager.addKhataNote()">Add Note</button>
         <div id="khataMsg" class="message" style="display: none;"></div>
         
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="KhataBookManager.renderKhataBook()">Refresh Notes</button>
+        </div>
         <div class="list-container" id="khataList"></div>
       </div>
       
@@ -1708,6 +1719,7 @@
         </div>
         <div class="btn-group">
           <button class="btn btn-info" onclick="viewKhataBook()"><i class="fas fa-book-open"></i> View Khata Book</button>
+          <button class="btn btn-secondary" onclick="refreshKhataBook()"><i class="fas fa-sync-alt"></i> Refresh</button>
         </div>
       </div>
       
@@ -1717,7 +1729,7 @@
           <input type="text" id="searchMaster" placeholder="Search Masters...">
         </div>
         <div class="list-container" id="mastersList"></div>
-        <button class="btn btn-secondary" onclick="UserCreationManager.renderSubordinates('superMaster', currentUserId, 'mastersList')">Refresh Masters</button>
+        <button class="btn btn-secondary" onclick="RestrictedHierarchyManager.renderSubordinatesList('mastersList', currentUserId, 'superMaster')">Refresh Masters</button>
       </div>
       
       <div class="section animate__animated animate__fadeIn">
@@ -1771,6 +1783,7 @@
         </div>
         <div class="btn-group">
           <button class="btn btn-info" onclick="viewKhataBook()"><i class="fas fa-book-open"></i> View Khata Book</button>
+          <button class="btn btn-secondary" onclick="refreshKhataBook()"><i class="fas fa-sync-alt"></i> Refresh</button>
         </div>
       </div>
       
@@ -1780,7 +1793,7 @@
           <input type="text" id="searchAgent" placeholder="Search Agents...">
         </div>
         <div class="list-container" id="agentsList"></div>
-        <button class="btn btn-secondary" onclick="UserCreationManager.renderSubordinates('master', currentUserId, 'agentsList')">Refresh Agents</button>
+        <button class="btn btn-secondary" onclick="RestrictedHierarchyManager.renderSubordinatesList('agentsList', currentUserId, 'master')">Refresh Agents</button>
       </div>
       
       <div class="section animate__animated animate__fadeIn">
@@ -1835,6 +1848,7 @@
         </div>
         <div class="btn-group">
           <button class="btn btn-info" onclick="viewKhataBook()"><i class="fas fa-book-open"></i> View Khata Book</button>
+          <button class="btn btn-secondary" onclick="refreshKhataBook()"><i class="fas fa-sync-alt"></i> Refresh</button>
         </div>
       </div>
       
@@ -1844,7 +1858,7 @@
           <input type="text" id="searchClient" placeholder="Search Clients...">
         </div>
         <div class="list-container" id="clientsList"></div>
-        <button class="btn btn-secondary" onclick="UserCreationManager.renderSubordinates('agent', currentUserId, 'clientsList')">Refresh Clients</button>
+        <button class="btn btn-secondary" onclick="RestrictedHierarchyManager.renderSubordinatesList('clientsList', currentUserId, 'agent')">Refresh Clients</button>
       </div>
       
       <div class="section animate__animated animate__fadeIn">
@@ -2009,7 +2023,10 @@
     <div class="modal-content">
       <div class="modal-header">
         <h3 class="modal-title">Khata Book</h3>
-        <button class="modal-close" onclick="closeKhataBookModal()">&times;</button>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn btn-sm btn-secondary" onclick="refreshKhataBook()"><i class="fas fa-sync-alt"></i> Refresh</button>
+          <button class="modal-close" onclick="closeKhataBookModal()">&times;</button>
+        </div>
       </div>
       <div class="list-container" id="khataBookModalContent"></div>
     </div>
@@ -3115,30 +3132,79 @@
       document.getElementById('khataList').innerHTML = khataHTML || '<div class="list-item">No notes found</div>';
     }
 
-    function viewKhataBook() {
-      const khataBook = getStore("khataBook", []);
-      const userKhata = khataBook.filter(entry => entry.user === currentUser);
-      let khataHTML = '';
-      
-      userKhata.forEach((entry, index) => {
-        khataHTML += `
-          <div class="list-item">
-            <div class="list-item-header">
-              <div class="list-item-title">
-                <i class="fas fa-sticky-note"></i> Note from Admin
+    async function viewKhataBook() {
+      try {
+        let userKhata = [];
+        
+        if (currentUserId) {
+          // Try to get khata notes from Supabase
+          const { data, error } = await supabase
+            .from('khata_book')
+            .select('*')
+            .eq('user_id', currentUserId)
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          userKhata = data || [];
+        } else {
+          // Fallback to localStorage
+          const khataBook = getStore("khataBook", []);
+          userKhata = khataBook.filter(entry => entry.user === currentUser);
+        }
+        
+        let khataHTML = '';
+        
+        userKhata.forEach((entry, index) => {
+          khataHTML += `
+            <div class="list-item">
+              <div class="list-item-header">
+                <div class="list-item-title">
+                  <i class="fas fa-sticky-note"></i> Note from Admin
+                </div>
+                <div class="badge badge-info">${entry.date || new Date(entry.created_at).toLocaleDateString()}</div>
               </div>
-              <div class="badge badge-info">${entry.date}</div>
+              <div class="list-item-details">
+                <div class="list-item-detail">${entry.note}</div>
+              </div>
             </div>
-            <div class="list-item-details">
-              <div class="list-item-detail">${entry.note}</div>
+          `;
+        });
+        
+        const modalContent = document.getElementById('khataBookModalContent');
+        modalContent.innerHTML = khataHTML || '<div class="list-item">No notes found</div>';
+        document.getElementById('khataBookModal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error loading khata book:', error);
+        // Fallback to localStorage
+        const khataBook = getStore("khataBook", []);
+        const userKhata = khataBook.filter(entry => entry.user === currentUser);
+        let khataHTML = '';
+        
+        userKhata.forEach((entry, index) => {
+          khataHTML += `
+            <div class="list-item">
+              <div class="list-item-header">
+                <div class="list-item-title">
+                  <i class="fas fa-sticky-note"></i> Note from Admin
+                </div>
+                <div class="badge badge-info">${entry.date}</div>
+              </div>
+              <div class="list-item-details">
+                <div class="list-item-detail">${entry.note}</div>
+              </div>
             </div>
-          </div>
-        `;
-      });
-      
-      const modalContent = document.getElementById('khataBookModalContent');
-      modalContent.innerHTML = khataHTML || '<div class="list-item">No notes found</div>';
-      document.getElementById('khataBookModal').style.display = 'flex';
+          `;
+        });
+        
+        const modalContent = document.getElementById('khataBookModalContent');
+        modalContent.innerHTML = khataHTML || '<div class="list-item">No notes found</div>';
+        document.getElementById('khataBookModal').style.display = 'flex';
+      }
+    }
+
+    function refreshKhataBook() {
+      viewKhataBook();
+      showToast('Khata book refreshed!');
     }
 
     function closeKhataBookModal() {
