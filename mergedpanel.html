@@ -11,6 +11,7 @@
   <script src="khata-book.js"></script>
   <script src="deposit-withdraw.js"></script>
   <script src="submit-data.js"></script>
+  <script src="user-management.js"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -1504,7 +1505,7 @@
           <option value="client">Client</option>
         </select>
         <div class="btn-group">
-          <button class="btn btn-secondary" onclick="renderAllUsers()">Show Users</button>
+          <button class="btn btn-secondary" onclick="UserManagement.renderAllUsers()">Show Users</button>
         </div>
         <div class="list-container" id="allUsersList"></div>
       </div>
@@ -2062,7 +2063,7 @@
         document.getElementById('dataDate').valueAsDate = new Date();
         SubmitDataManager.renderSubmittedData();
       } else if (sectionName === 'users') {
-        renderAllUsers();
+        UserManagement.renderAllUsers();
       } else if (sectionName === 'khataBook') {
         KhataBookManager.populateKhataUsers();
         KhataBookManager.renderKhataBook();
