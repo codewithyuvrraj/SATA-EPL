@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="database.js"></script>
+  <script src="khata-book.js"></script>
+  <script src="deposit-withdraw.js"></script>
+  <script src="submit-data.js"></script>
+  <script src="user-management.js"></script>
+  <script src="number-system.js"></script>
   <style>
     :root {
       --primary: #3498db;
@@ -1307,6 +1313,48 @@
       90% { opacity: 1; }
       100% { transform: translateY(-100px); opacity: 0; }
     }
+    
+    /* Number System Styles */
+    .number-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .number-box {
+      width: calc(25% - 10px);
+      min-width: 80px;
+      padding: 15px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 2px solid transparent;
+    }
+    
+    .number-box:hover {
+      background: rgba(52,152,219,0.3);
+      transform: scale(1.05);
+    }
+    
+    .number-box.has-bet {
+      background: rgba(46,204,113,0.3);
+      border-color: var(--success);
+    }
+    
+    .number-box .number {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--light);
+    }
+    
+    .number-box .bet-info {
+      font-size: 0.8rem;
+      color: var(--warning);
+      margin-top: 5px;
+    }
   </style>
 </head>
 <body>
@@ -1356,6 +1404,9 @@
     </div>
     <div class="dropdown-item" onclick="showSection('heading')">
       <i class="fas fa-heading"></i> Heading
+    </div>
+    <div class="dropdown-item" onclick="showSection('numberSystem')">
+      <i class="fas fa-dice"></i> Number System
     </div>
   </div>
   
@@ -1474,7 +1525,7 @@
             <option value="withdraw">Dena</option>
           </select>
         </div>
-        <button class="btn btn-primary btn-block" onclick="submitTransaction()">Save</button>
+        <button class="btn btn-primary btn-block" onclick="SubmitDataManager.submitTransaction()">Save</button>
         <div id="submitMsg" class="message" style="display: none;"></div>
       </div>
       
@@ -1500,7 +1551,7 @@
           <option value="client">Client</option>
         </select>
         <div class="btn-group">
-          <button class="btn btn-secondary" onclick="renderAllUsers()">Show Users</button>
+          <button class="btn btn-secondary" onclick="UserManagement.renderAllUsers()">Show Users</button>
         </div>
         <div class="list-container" id="allUsersList"></div>
       </div>
@@ -1556,8 +1607,8 @@
         <input type="text" id="transUser" placeholder="Username">
         <input type="number" id="transAmt" placeholder="Amount">
         <div class="btn-group">
-          <button class="btn btn-primary" onclick="transact('deposit')">Deposit</button>
-          <button class="btn btn-danger" onclick="transact('withdraw')">Withdraw</button>
+          <button class="btn btn-primary" onclick="TransactionManager.deposit()">Deposit</button>
+          <button class="btn btn-danger" onclick="TransactionManager.withdraw()">Withdraw</button>
         </div>
         <div id="transMsg" class="message" style="display: none;"></div>
       </div>
@@ -1575,7 +1626,7 @@
           <option value="">Select User</option>
         </select>
         <textarea id="khataNote" placeholder="Type your note here..." rows="4"></textarea>
-        <button class="btn btn-primary btn-block" onclick="addKhataNote()">Add Note</button>
+        <button class="btn btn-primary btn-block" onclick="KhataBookManager.addKhataNote()">Add Note</button>
         <div id="khataMsg" class="message" style="display: none;"></div>
         
         <div class="list-container" id="khataList"></div>
@@ -1587,6 +1638,21 @@
         <textarea id="announcementText" placeholder="Type your announcement here..." rows="4"></textarea>
         <button class="btn btn-primary btn-block" onclick="updateAnnouncement()">Update Announcement</button>
         <div id="headingMsg" class="message" style="display: none;"></div>
+      </div>
+      
+      <!-- Number System Section -->
+      <div class="section animate__animated animate__fadeIn" id="numberSystemSection" style="display: none;">
+        <h3><i class="fas fa-dice"></i> Number System</h3>
+        
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('ghaziabad')">Ghaziabad</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('faridabad')">Faridabad</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('gali')">Gali</button>
+          <button class="btn btn-primary" onclick="NumberSystem.loadBets('disawar')">Disawar</button>
+          <button class="btn btn-warning" onclick="NumberSystem.loadBets('harup')">Harup</button>
+        </div>
+        
+        <div id="numberGridContainer" style="margin-top: 20px;"></div>
       </div>
       
       <button class="btn btn-danger btn-block" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -1935,414 +2001,29 @@
     </div>
   </div>
 
+  <!-- Bet Modal -->
+  <div id="betModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Place Bet</h3>
+        <button class="modal-close" onclick="NumberSystem.closeBetModal()">&times;</button>
+      </div>
+      <div style="padding: 20px;">
+        <p>Game: <strong id="betModalGameType"></strong></p>
+        <p>Number: <strong id="betModalNumber"></strong></p>
+        <input type="hidden" id="betModalGameTypeHidden">
+        <input type="hidden" id="betModalNumberHidden">
+        <input type="number" id="betAmount" placeholder="Enter bet amount" min="1" style="margin-top: 15px;">
+        <p style="margin-top: 10px; color: var(--warning);">Potential Win: 80X</p>
+        <div class="btn-group" style="margin-top: 20px;">
+          <button class="btn btn-primary" onclick="NumberSystem.placeBet()">Place Bet</button>
+          <button class="btn btn-secondary" onclick="NumberSystem.closeBetModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Supabase Configuration
-    const SUPABASE_URL = 'https://auweujfhgapogwckwjyk.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1d2V1amZoZ2Fwb2d3Y2t3anlrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE0NjU2MTAsImV4cCI6MjA3NzA0MTYxMH0.vFPap5BY2JqrMKMTTgQshmjeIC1arRSoQLpMNQwp_t0';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Database Functions
-    async function initializeDatabase() {
-      try {
-        // Create tables if they don't exist
-        await createTables();
-        console.log('Database initialized successfully');
-      } catch (error) {
-        console.error('Database initialization error:', error);
-      }
-    }
-
-    async function createTables() {
-      // Note: In a real application, you would create these tables through Supabase dashboard or migrations
-      // This is just for reference of the table structure needed
-      console.log('Tables should be created in Supabase dashboard with the following structure:');
-      console.log(`
-        -- supermasters table
-        CREATE TABLE supermasters (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          login_name VARCHAR(50) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
-          win_commission DECIMAL(5,2) DEFAULT 0,
-          loss_commission DECIMAL(5,2) DEFAULT 0,
-          blocked BOOLEAN DEFAULT false,
-          total_commission DECIMAL(10,2) DEFAULT 0,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- masters table
-        CREATE TABLE masters (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          login_name VARCHAR(50) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
-          supermaster_id INTEGER REFERENCES supermasters(id),
-          win_commission DECIMAL(5,2) DEFAULT 0,
-          loss_commission DECIMAL(5,2) DEFAULT 0,
-          blocked BOOLEAN DEFAULT false,
-          total_commission DECIMAL(10,2) DEFAULT 0,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- agents table
-        CREATE TABLE agents (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          login_name VARCHAR(50) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
-          master_id INTEGER REFERENCES masters(id),
-          win_commission DECIMAL(5,2) DEFAULT 0,
-          loss_commission DECIMAL(5,2) DEFAULT 0,
-          blocked BOOLEAN DEFAULT false,
-          total_commission DECIMAL(10,2) DEFAULT 0,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- clients table
-        CREATE TABLE clients (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(50) UNIQUE NOT NULL,
-          login_name VARCHAR(50) UNIQUE NOT NULL,
-          password VARCHAR(100) NOT NULL,
-          agent_id INTEGER REFERENCES agents(id),
-          balance DECIMAL(10,2) DEFAULT 0,
-          blocked BOOLEAN DEFAULT false,
-          last_login TIMESTAMP,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-
-        -- transactions table
-        CREATE TABLE transactions (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER NOT NULL,
-          user_type VARCHAR(20) NOT NULL,
-          transaction_type VARCHAR(20) NOT NULL,
-          amount DECIMAL(10,2) NOT NULL,
-          description TEXT,
-          created_at TIMESTAMP DEFAULT NOW()
-        );
-      `);
-    }
-
-    // Supermaster Database Functions
-    async function createSupermaster(username, loginName, password, winCommission, lossCommission) {
-      try {
-        const { data, error } = await supabase
-          .from('supermasters')
-          .insert({
-            username,
-            login_name: loginName,
-            password,
-            win_commission: winCommission,
-            loss_commission: lossCommission
-          })
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error creating supermaster:', error);
-        throw error;
-      }
-    }
-
-    async function getSupermaster(loginName, password) {
-      try {
-        const { data, error } = await supabase
-          .from('supermasters')
-          .select('*')
-          .eq('login_name', loginName)
-          .eq('password', password)
-          .eq('blocked', false)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error getting supermaster:', error);
-        return null;
-      }
-    }
-
-    async function getAllSupermasters() {
-      try {
-        const { data, error } = await supabase
-          .from('supermasters')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error getting supermasters:', error);
-        return [];
-      }
-    }
-
-    // Master Database Functions
-    async function createMaster(username, loginName, password, supermasterId, winCommission, lossCommission) {
-      try {
-        const { data, error } = await supabase
-          .from('masters')
-          .insert({
-            username,
-            login_name: loginName,
-            password,
-            supermaster_id: supermasterId,
-            win_commission: winCommission,
-            loss_commission: lossCommission
-          })
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error creating master:', error);
-        throw error;
-      }
-    }
-
-    async function getMaster(loginName, password) {
-      try {
-        const { data, error } = await supabase
-          .from('masters')
-          .select('*')
-          .eq('login_name', loginName)
-          .eq('password', password)
-          .eq('blocked', false)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error getting master:', error);
-        return null;
-      }
-    }
-
-    async function getMastersBySupermasterId(supermasterId) {
-      try {
-        const { data, error } = await supabase
-          .from('masters')
-          .select('*')
-          .eq('supermaster_id', supermasterId)
-          .eq('blocked', false)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error getting masters:', error);
-        return [];
-      }
-    }
-
-    // Agent Database Functions
-    async function createAgent(username, loginName, password, masterId, winCommission, lossCommission) {
-      try {
-        const { data, error } = await supabase
-          .from('agents')
-          .insert({
-            username,
-            login_name: loginName,
-            password,
-            master_id: masterId,
-            win_commission: winCommission,
-            loss_commission: lossCommission
-          })
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error creating agent:', error);
-        throw error;
-      }
-    }
-
-    async function getAgent(loginName, password) {
-      try {
-        const { data, error } = await supabase
-          .from('agents')
-          .select('*')
-          .eq('login_name', loginName)
-          .eq('password', password)
-          .eq('blocked', false)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error getting agent:', error);
-        return null;
-      }
-    }
-
-    async function getAgentsByMasterId(masterId) {
-      try {
-        const { data, error } = await supabase
-          .from('agents')
-          .select('*')
-          .eq('master_id', masterId)
-          .eq('blocked', false)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error getting agents:', error);
-        return [];
-      }
-    }
-
-    // Client Database Functions
-    async function createClient(username, loginName, password, agentId, initialBalance = 0) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .insert({
-            username,
-            login_name: loginName,
-            password,
-            agent_id: agentId,
-            balance: initialBalance
-          })
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error creating client:', error);
-        throw error;
-      }
-    }
-
-    async function getClient(loginName, password) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('login_name', loginName)
-          .eq('password', password)
-          .eq('blocked', false)
-          .single();
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error getting client:', error);
-        return null;
-      }
-    }
-
-    async function getClientsByAgentId(agentId) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .select('*')
-          .eq('agent_id', agentId)
-          .eq('blocked', false)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error getting clients:', error);
-        return [];
-      }
-    }
-
-    async function updateClientBalance(clientId, newBalance) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .update({ balance: newBalance })
-          .eq('id', clientId)
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error updating client balance:', error);
-        throw error;
-      }
-    }
-
-    async function updateLastLogin(clientId) {
-      try {
-        const { data, error } = await supabase
-          .from('clients')
-          .update({ last_login: new Date().toISOString() })
-          .eq('id', clientId);
-        
-        if (error) throw error;
-        return data;
-      } catch (error) {
-        console.error('Error updating last login:', error);
-        throw error;
-      }
-    }
-
-    // Transaction Functions
-    async function recordTransaction(userId, userType, transactionType, amount, description = '') {
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .insert({
-            user_id: userId,
-            user_type: userType,
-            transaction_type: transactionType,
-            amount,
-            description
-          })
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error recording transaction:', error);
-        throw error;
-      }
-    }
-
-    async function getTransactionsByUser(userId, userType) {
-      try {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('user_id', userId)
-          .eq('user_type', userType)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
-        console.error('Error getting transactions:', error);
-        return [];
-      }
-    }
-
-    // Block/Unblock Functions
-    async function toggleUserBlock(userType, userId, blocked) {
-      try {
-        const table = userType === 'supermaster' ? 'supermasters' : 
-                     userType === 'master' ? 'masters' : 
-                     userType === 'agent' ? 'agents' : 'clients';
-        
-        const { data, error } = await supabase
-          .from(table)
-          .update({ blocked })
-          .eq('id', userId)
-          .select();
-        
-        if (error) throw error;
-        return data[0];
-      } catch (error) {
-        console.error('Error toggling user block:', error);
-        throw error;
-      }
-    }
-
     // Game list from the provided file (Lucky Spin removed)
     const gamesList = ["Mines", "Aviator", "Dragon Tiger", "Lucky 7"];
     let currentUser = null;
@@ -2448,6 +2129,7 @@
       document.getElementById('depositWithdrawSection').style.display = 'none';
       document.getElementById('khataBookSection').style.display = 'none';
       document.getElementById('headingSection').style.display = 'none';
+      document.getElementById('numberSystemSection').style.display = 'none';
       
       // Show selected section
       document.getElementById(sectionName + 'Section').style.display = 'block';
@@ -2457,20 +2139,22 @@
         document.getElementById('ledgerDate').valueAsDate = new Date();
         renderLedger();
       } else if (sectionName === 'submit') {
-        populateSubmitUsers();
+        SubmitDataManager.populateSubmitUsers();
         document.getElementById('submitDate').valueAsDate = new Date();
       } else if (sectionName === 'commission') {
         populateCommissionUsers();
       } else if (sectionName === 'data') {
         document.getElementById('dataDate').valueAsDate = new Date();
-        renderSubmittedData();
+        SubmitDataManager.renderSubmittedData();
       } else if (sectionName === 'users') {
-        renderAllUsers();
+        UserManagement.renderAllUsers();
       } else if (sectionName === 'khataBook') {
-        populateKhataUsers();
-        renderKhataBook();
+        KhataBookManager.populateKhataUsers();
+        KhataBookManager.renderKhataBook();
       } else if (sectionName === 'heading') {
         document.getElementById('announcementText').value = getStore('announcement', '');
+      } else if (sectionName === 'numberSystem') {
+        // Number system section loaded
       }
     }
 
@@ -2515,7 +2199,7 @@
           }
         } else if (panel === 'client') {
           // Client login using Supabase
-          const client = await getClient(loginName, password);
+          const client = await DatabaseManager.getClient(loginName, password);
           
           if (!client) {
             showMessage('loginMsg', 'Invalid credentials', 'error');
@@ -2528,7 +2212,7 @@
           currentUserId = client.id;
           
           // Update last login
-          await updateLastLogin(client.id);
+          await DatabaseManager.updateLastLogin(client.id);
           
           // Show the client panel
           document.getElementById('clientPanel').style.display = "block";
@@ -2555,11 +2239,11 @@
           let user = null;
           
           if (panel === 'superMaster') {
-            user = await getSupermaster(loginName, password);
+            user = await DatabaseManager.getSupermaster(loginName, password);
           } else if (panel === 'master') {
-            user = await getMaster(loginName, password);
+            user = await DatabaseManager.getMaster(loginName, password);
           } else if (panel === 'agent') {
-            user = await getAgent(loginName, password);
+            user = await DatabaseManager.getAgent(loginName, password);
           }
           
           if (!user) {
@@ -2613,17 +2297,11 @@
 
     async function refreshDashboard() {
       try {
-        const [superMasters, masters, agents, clients] = await Promise.all([
-          getAllSupermasters(),
-          supabase.from('masters').select('*').eq('blocked', false),
-          supabase.from('agents').select('*').eq('blocked', false),
-          supabase.from('clients').select('*').eq('blocked', false)
-        ]);
-        
-        document.getElementById('totalSuperMasters').textContent = superMasters.filter(u => !u.blocked).length;
-        document.getElementById('totalMasters').textContent = masters.data?.length || 0;
-        document.getElementById('totalAgents').textContent = agents.data?.length || 0;
-        document.getElementById('totalClients').textContent = clients.data?.length || 0;
+        const stats = await DatabaseManager.getDashboardStats();
+        document.getElementById('totalSuperMasters').textContent = stats.superMasters;
+        document.getElementById('totalMasters').textContent = stats.masters;
+        document.getElementById('totalAgents').textContent = stats.agents;
+        document.getElementById('totalClients').textContent = stats.clients;
       } catch (error) {
         console.error('Error refreshing dashboard:', error);
         // Fallback to localStorage if Supabase fails
@@ -2639,55 +2317,72 @@
       }
     }
 
-    function showUserList(userType) {
+    async function showUserList(userType) {
       const modalTitle = document.getElementById('userListModalTitle');
       const modalContent = document.getElementById('userListModalContent');
       
       let users = [];
       let title = '';
+      let tableName = '';
       
-      switch(userType) {
-        case 'superMasters':
-          users = getStore("superMasters", []).filter(u => !u.blocked);
-          title = 'Super Masters';
-          break;
-        case 'masters':
-          users = getStore("masters", []).filter(u => !u.blocked);
-          title = 'Masters';
-          break;
-        case 'agents':
-          users = getStore("agents", []).filter(u => !u.blocked);
-          title = 'Agents';
-          break;
-        case 'clients':
-          users = getStore("clients", []).filter(u => !u.blocked);
-          title = 'Clients';
-          break;
-      }
-      
-      modalTitle.textContent = `${title} List (${users.length})`;
-      
-      let userListHTML = '';
-      users.forEach(user => {
-        userListHTML += `
-          <div class="list-item">
-            <div class="list-item-header">
-              <div class="list-item-title">
-                <span class="user-type-indicator ${getUserTypeIndicator(userType)}">${getUserTypeAbbr(userType)}</span>
-                ${user.user}
+      try {
+        switch(userType) {
+          case 'superMasters':
+            tableName = 'supermasters';
+            title = 'Super Masters';
+            break;
+          case 'masters':
+            tableName = 'masters';
+            title = 'Masters';
+            break;
+          case 'agents':
+            tableName = 'agents';
+            title = 'Agents';
+            break;
+          case 'clients':
+            tableName = 'clients';
+            title = 'Clients';
+            break;
+        }
+        
+        const { data, error } = await supabase
+          .from(tableName)
+          .select('*')
+          .eq('blocked', false)
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        users = data || [];
+        
+        modalTitle.textContent = `${title} List (${users.length})`;
+        
+        let userListHTML = '';
+        users.forEach(user => {
+          userListHTML += `
+            <div class="list-item">
+              <div class="list-item-header">
+                <div class="list-item-title">
+                  <span class="user-type-indicator ${getUserTypeIndicator(userType)}">${getUserTypeAbbr(userType)}</span>
+                  ${user.username}
+                </div>
+              </div>
+              <div class="list-item-details">
+                <div class="list-item-detail"><i class="fas fa-key"></i> Login: ${user.login_name}</div>
+                ${user.win_commission ? `<div class="list-item-detail"><i class="fas fa-percentage"></i> Win: ${user.win_commission}% | Loss: ${user.loss_commission}%</div>` : ''}
+                <div class="list-item-detail"><i class="fas fa-lock"></i> Password: ${user.password}</div>
+                <div class="list-item-detail"><i class="fas fa-money-bill-wave"></i> Balance: ₹${user.balance || 0}</div>
               </div>
             </div>
-            <div class="list-item-details">
-              <div class="list-item-detail"><i class="fas fa-key"></i> Login: ${user.loginName || user.user}</div>
-              ${user.winCommission ? `<div class="list-item-detail"><i class="fas fa-percentage"></i> Win: ${user.winCommission}% | Loss: ${user.lossCommission}%</div>` : ''}
-              ${currentUserType === 'admin' ? `<div class="list-item-detail"><i class="fas fa-lock"></i> Password: ${user.pass}</div>` : ''}
-            </div>
-          </div>
-        `;
-      });
-      
-      modalContent.innerHTML = userListHTML || '<div class="list-item">No users found</div>';
-      document.getElementById('userListModal').style.display = 'flex';
+          `;
+        });
+        
+        modalContent.innerHTML = userListHTML || '<div class="list-item">No users found</div>';
+        document.getElementById('userListModal').style.display = 'flex';
+      } catch (error) {
+        console.error('Error loading users:', error);
+        modalContent.innerHTML = '<div class="list-item">Error loading users</div>';
+        document.getElementById('userListModal').style.display = 'flex';
+      }
     }
 
     function closeUserListModal() {
@@ -3183,7 +2878,7 @@
         let newUser = null;
         
         if (userType === 'superMaster') {
-          newUser = await createSupermaster(username, loginName, password, winCommission, lossCommission);
+          newUser = await DatabaseManager.createSupermaster(username, loginName, password, winCommission, lossCommission);
         } else if (userType === 'master') {
           // For masters, we need a supermaster ID - for now, we'll use null or handle this in UI
           showMessage('userMsg', 'Master creation requires supermaster assignment', 'error');
@@ -3799,15 +3494,8 @@
     async function renderClientCoins() {
       try {
         if (currentUserId) {
-          const { data, error } = await supabase
-            .from('clients')
-            .select('balance')
-            .eq('id', currentUserId)
-            .single();
-          
-          if (error) throw error;
-          
-          const coins = data.balance || 0;
+          const client = await DatabaseManager.getClient(currentUser, '');
+          const coins = client?.balance || 0;
           document.getElementById("clientCoins").textContent = coins;
 
           // Update in all games
@@ -4280,8 +3968,9 @@
 
         // Update balance if won
         if (winAmount > 0) {
-          balances[currentUser] = (balances[currentUser] || 0) + winAmount;
-          setStore("balances", balances);
+          const currentBalance = await getCurrentClientBalance();
+          const newBalance = currentBalance + winAmount;
+          await updateClientBalanceInDB(newBalance);
 
           // Add coin animation
           addCoinAnimation();
@@ -4342,17 +4031,17 @@
         return;
       }
 
-      const balances = getStore("balances", {});
-      if ((balances[currentUser] || 0) < betAmount) {
+      const currentBalance = await getCurrentClientBalance();
+      if (currentBalance < betAmount) {
         showToast("Insufficient balance", true);
         return;
       }
 
       try {
         // Deduct bet amount
-        balances[currentUser] -= betAmount;
-        setStore("balances", balances);
-        renderClientCoins();
+        const newBalance = currentBalance - betAmount;
+        await updateClientBalanceInDB(newBalance);
+        await renderClientCoins();
 
         lucky7BetAmount = betAmount;
         lucky7Spinning = true;
@@ -4429,9 +4118,9 @@
       try {
         // Update balance if won
         if (winAmount > 0) {
-          const balances = getStore("balances", {});
-          balances[currentUser] = (balances[currentUser] || 0) + winAmount;
-          setStore("balances", balances);
+          const currentBalance = await getCurrentClientBalance();
+          const newBalance = currentBalance + winAmount;
+          await updateClientBalanceInDB(newBalance);
 
           // Add coin animation
           addCoinAnimation();
@@ -4471,14 +4160,8 @@
     async function getCurrentClientBalance() {
       try {
         if (currentUserId) {
-          const { data, error } = await supabase
-            .from('clients')
-            .select('balance')
-            .eq('id', currentUserId)
-            .single();
-          
-          if (error) throw error;
-          return data.balance || 0;
+          const client = await DatabaseManager.getClient(currentUser, '');
+          return client?.balance || 0;
         }
         return 0;
       } catch (error) {
@@ -4493,7 +4176,7 @@
     async function updateClientBalanceInDB(newBalance) {
       try {
         if (currentUserId) {
-          await updateClientBalance(currentUserId, newBalance);
+          await DatabaseManager.updateClientBalance(currentUserId, newBalance);
         }
       } catch (error) {
         console.error('Error updating client balance:', error);
@@ -4509,7 +4192,7 @@
       try {
         // Record transaction in Supabase
         if (currentUserId) {
-          await recordTransaction(
+          await DatabaseManager.recordTransaction(
             currentUserId, 
             'client', 
             'game_play', 
@@ -4544,7 +4227,6 @@
     // Initialize on load
     document.addEventListener('DOMContentLoaded', async function() {
       initializeStorage();
-      await initializeDatabase();
       
       // Set default dates
       document.getElementById('ledgerDate').valueAsDate = new Date();
@@ -4552,9 +4234,10 @@
       document.getElementById('dataDate').valueAsDate = new Date();
       
       // Add event listeners
-      document.getElementById('submitPanel').addEventListener('change', populateSubmitUsers);
+      document.getElementById('submitPanel').addEventListener('change', () => SubmitDataManager.populateSubmitUsers());
       document.getElementById('commissionPanel').addEventListener('change', populateCommissionUsers);
-      document.getElementById('khataPanel').addEventListener('change', populateKhataUsers);
+      document.getElementById('khataPanel').addEventListener('change', () => KhataBookManager.populateKhataUsers());
+      document.getElementById('khataUser').addEventListener('change', () => KhataBookManager.renderKhataBook());
       
       // Hide admin menu icon initially
       document.getElementById('adminMenuIcon').style.display = 'none';
